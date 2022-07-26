@@ -2,7 +2,7 @@ import type { LiveList, LiveObject } from "@liveblocks/client";
 import { createClient } from "@liveblocks/client";
 
 const client = createClient({
-  publicApiKey: "pk_test_LsTqRI8SV9SYRE03JDx88nJG",
+  publicApiKey: import.meta.env.LIVE_BLOCKS_PUBLIC_KEY,
 });
 
 type Storage = {
