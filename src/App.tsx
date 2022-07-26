@@ -87,9 +87,9 @@ function App() {
       }}
     >
       <div className="flex h-full">
-        <div className="border-gray-200 border-r" style={{ width: "50%" }}>
+        {/* <div className="border-gray-200 border-r" style={{ width: "50%" }}>
           <Editor />
-        </div>
+        </div> */}
         <Metaverse />
       </div>
     </RoomProvider>
