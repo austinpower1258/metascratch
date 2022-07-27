@@ -10,18 +10,3 @@ export default defineConfig({
     }),
   ]
 })
-// export default defineConfig(({ command, mode }) => {
-//   const env = loadEnv(mode, process.cwd(), '')
-//   return {
-//     plugins: [
-//       react(),
-//       Unocss({
-//         /* options */
-//       }),
-//     ],
-//     define: {
-//       __APP_ENV__: env.APP_ENV,
-//       __LIVE_BLOCKS_PUBLIC_KEY__: env.LIVE_BLOCKS_PUBLIC_KEY
-//     }
-//   }
-// })
