@@ -1,23 +1,26 @@
-import { Stage, Layer, Rect, Circle } from "react-konva";
+import { javascript } from "@codemirror/lang-javascript";
+import { ViewUpdate } from "@codemirror/view";
 import { LiveList, LiveObject } from "@liveblocks/client";
-import { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./components/Home";
+import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { OrthographicCamera, OrbitControls } from "@react-three/drei";
-import * as THREE from "three";
-import Obj from "./components/Obj";
-import { RoomProvider, useList } from "./lib/liveblocks";
-import { useObject } from "./lib/liveblocks";
 import {
   QueryClient,
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
+import CodeMirror from "@uiw/react-codemirror";
 import * as esbuild from "esbuild-wasm";
+import { useCallback, useEffect, useState } from "react";
+import { Circle, Layer, Rect, Stage } from "react-konva";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import * as THREE from "three";
 import invariant from "tiny-invariant";
-import { store } from "./lib/store";
-import { useSyncedStore } from "@syncedstore/react";
+import { uid } from "uid";
+import { yCollab } from "y-codemirror.next";
+import Home from "./components/Home";
+import Obj from "./components/Obj";
+import { RoomProvider, useObject } from "./lib/liveblocks";
+import { yjs } from "./lib/store";
 
 let initialized = false;
 
@@ -117,45 +120,44 @@ function Editor() {
   );
 }
 
-function liveListToString(input: LiveList<string> | null) {
-  if (!input) return "";
-  return input?.toArray().join("");
-}
-
 function App() {
-  const sourceCodeLiveList = useList("sourceCode");
-  const sourceCode = liveListToString(sourceCodeLiveList);
-  const transpiled = useEsbuild(sourceCode, { loader: "tsx" });
+  const { state, doc, store, provider, undoManager } = yjs.useStore();
+  const transpiled = useEsbuild(state.sourceCode.toJSON(), { loader: "tsx" });
+  const [width, setWidth] = useState(400);
+
+  const onChange = useCallback((value: string, viewUpdate: ViewUpdate) => {
+    // console.log("value:", value);
+  }, []);
+
+  useEffect(() => {
+    if (provider) {
+      provider.awareness.setLocalStateField(uid(), {
+        name: "Anonymous " + Math.floor(Math.random() * 100),
+      });
+    }
+  }, [provider]);
+  if (!provider || !undoManager) {
+    return null;
+  }
 
   return (
     <div className="flex h-full">
-      <div className="border-gray-200 border-r" style={{ width: "50%" }}>
-        <textarea
-          value={sourceCode}
-          onChange={(e) => {
-            const value = e.target.value;
-            let i = 0;
-            while (i < value.length) {
-              if (i >= sourceCode.length) {
-                sourceCodeLiveList?.push(value[i]);
-              } else {
-                sourceCodeLiveList?.set(i, value[i]);
-              }
-              i++;
-            }
-            while (i < sourceCode.length) {
-              sourceCodeLiveList?.delete(i);
-              i++;
-            }
-            // for (let i = 0; i < value.length; ++i) {
-            //   if (i >= sourceCode.length) {
-            //     sourceCodeLiveList?.push(value[i]);
-            //   } else {
-            //     sourceCodeLiveList?.set(i, value[i]);
-            //   }
-            // }
-          }}
-        ></textarea>
+      <div
+        className="border-gray-200 border-r"
+        style={{ width: width, maxWidth: width, minWidth: width }}
+      >
+        <CodeMirror
+          value="console.log('hello world!');"
+          height="200px"
+          className="text-xs"
+          extensions={[
+            javascript({ jsx: true, typescript: true }),
+            yCollab(store.sourceCode as any, provider.awareness, {
+              undoManager,
+            }),
+          ]}
+          onChange={onChange}
+        />
         <div className="text-xs">
           <div>output:</div>
           <pre>{transpiled.data?.code}</pre>
@@ -176,15 +178,17 @@ function Router() {
           <Route
             path="/app"
             element={
-              <RoomProvider
-                id="my-room-id"
-                initialStorage={{
-                  objectPosition: new LiveObject({ x: 0, y: 1, z: 0 }),
-                  sourceCode: new LiveList([]),
-                }}
-              >
-                <App />
-              </RoomProvider>
+              <yjs.Provider roomId={"my-room-id"}>
+                <RoomProvider
+                  id="my-room-id"
+                  initialStorage={{
+                    objectPosition: new LiveObject({ x: 0, y: 1, z: 0 }),
+                    sourceCode: new LiveList([]),
+                  }}
+                >
+                  <App />
+                </RoomProvider>
+              </yjs.Provider>
             }
           />
         </Routes>
