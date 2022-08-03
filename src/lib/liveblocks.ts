@@ -7,7 +7,7 @@ const client = createClient({
 
 type Storage = {
   objectPosition: LiveObject<{ x: number; y: number; z: number }>;
-  sourceCode: LiveList<string>;
+  //sourceCode: LiveList<string>;
   // variables: LiveObject<{
   //   [key: string]: LiveObject<{}>
   // }>
