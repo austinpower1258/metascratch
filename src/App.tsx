@@ -1,12 +1,12 @@
 import { javascript } from "@codemirror/lang-javascript";
 import { ViewUpdate } from "@codemirror/view";
-import { LiveList, LiveObject } from "@liveblocks/client";
+import { LiveObject } from "@liveblocks/client";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { QueryClientProvider } from "@tanstack/react-query";
 import CodeMirror from "@uiw/react-codemirror";
 import { useCallback, useEffect, useState } from "react";
-import { Circle, Layer, Rect, Stage } from "react-konva";
+//import { Circle, Layer, Rect, Stage } from "react-konva";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import * as THREE from "three";
 import { uid } from "uid";
@@ -79,17 +79,17 @@ const Metaverse = () => {
   );
 };
 
-function Editor() {
-  if (typeof window === "undefined") return null;
-  return (
-    <Stage width={window.innerWidth} height={window.innerHeight}>
-      <Layer>
-        <Rect width={50} height={50} fill="red" />
-        <Circle x={200} y={200} stroke="black" radius={50} />
-      </Layer>
-    </Stage>
-  );
-}
+// function Editor() {
+//   if (typeof window === "undefined") return null;
+//   return (
+//     <Stage width={window.innerWidth} height={window.innerHeight}>
+//       <Layer>
+//         <Rect width={50} height={50} fill="red" />
+//         <Circle x={200} y={200} stroke="black" radius={50} />
+//       </Layer>
+//     </Stage>
+//   );
+// }
 
 function App() {
   const { state, doc, store, provider, undoManager } = yjs.useStore();
@@ -118,7 +118,7 @@ function App() {
         style={{ width: width, maxWidth: width, minWidth: width }}
       >
         <CodeMirror
-          value="console.log('hello world!');"
+          value=""
           height="200px"
           className="text-xs"
           extensions={[
@@ -154,7 +154,6 @@ function Router() {
                   id="my-room-id"
                   initialStorage={{
                     objectPosition: new LiveObject({ x: 0, y: 1, z: 0 }),
-                    sourceCode: new LiveList([]),
                   }}
                 >
                   <App />
