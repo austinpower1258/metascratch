@@ -3,60 +3,30 @@ import { ViewUpdate } from "@codemirror/view";
 import { LiveList, LiveObject } from "@liveblocks/client";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import CodeMirror from "@uiw/react-codemirror";
-import * as esbuild from "esbuild-wasm";
 import { useCallback, useEffect, useState } from "react";
 import { Circle, Layer, Rect, Stage } from "react-konva";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import * as THREE from "three";
-import invariant from "tiny-invariant";
 import { uid } from "uid";
 import { yCollab } from "y-codemirror.next";
 import Home from "./components/Home";
 import Obj from "./components/Obj";
 import { RoomProvider, useObject } from "./lib/liveblocks";
+import { queryClient } from "./lib/react-query";
 import { yjs } from "./lib/store";
-
-let initialized = false;
-
-esbuild
-  .initialize({
-    wasmURL: "https://unpkg.com/esbuild-wasm@0.14.50/esbuild.wasm",
-  })
-  .then(() => {
-    initialized = true;
-  });
-
-const queryClient = new QueryClient();
-
-function useEsbuild(
-  input: Parameters<typeof esbuild.transform>[0],
-  options: Parameters<typeof esbuild.transform>[1]
-) {
-  // const [initialized, setInitialized] = useState(false);
-  return useQuery(
-    ["esbuild-source-code", { input, options, initialized }],
-    async ({ queryKey }) => {
-      const options = queryKey[1];
-      invariant(typeof options !== "string");
-      if (!initialized) {
-        return null;
-      }
-      return esbuild.transform(options.input, options.options);
-    }
-  );
-}
+import { useEsbuild } from "./lib/useEsbuild";
 
 const Metaverse = () => {
+  const { ydoc, state } = yjs.useStore();
+  // const _objectPosition = ydoc.getText("objectPosition");
+  // const _objectPosition = ydoc.getArray<number>("objectPosition")
   const [isDragging, setIsDragging] = useState(false);
   const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const objectPosition = useObject("objectPosition");
   if (!objectPosition) return null;
+  // state._testObjectPosition
 
   function setPosition(position: number[]) {
     if (!objectPosition) return;
@@ -99,6 +69,7 @@ const Metaverse = () => {
         setIsDragging={setIsDragging}
         floorPlane={floorPlane}
         position={arrayObjectPosition}
+        // setPosition={_setPosition}
         setPosition={setPosition}
       />
 
