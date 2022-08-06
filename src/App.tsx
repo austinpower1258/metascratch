@@ -5,7 +5,8 @@ import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { QueryClientProvider } from "@tanstack/react-query";
 import CodeMirror from "@uiw/react-codemirror";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createRoot, Root } from "react-dom/client";
 //import { Circle, Layer, Rect, Stage } from "react-konva";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import * as THREE from "three";
@@ -17,6 +18,8 @@ import { RoomProvider, useObject } from "./lib/liveblocks";
 import { queryClient } from "./lib/react-query";
 import { yjs } from "./lib/store";
 import { useEsbuild } from "./lib/useEsbuild";
+import * as React from "react";
+// import { ErrorBoundary } from "@react-three/fiber/dist/declarations/src/core/utils";
 
 const Metaverse = () => {
   const { ydoc, state } = yjs.useStore();
@@ -91,10 +94,123 @@ const Metaverse = () => {
 //   );
 // }
 
+function Cube(
+  props: JSX.IntrinsicElements["mesh"] & {
+    color?: string;
+    boxGeometry?: [number, number, number];
+  }
+) {
+  const mesh = useRef<THREE.Mesh>(null!);
+
+  return (
+    <mesh {...props} ref={mesh}>
+      <boxGeometry args={props.boxGeometry ?? [1, 1, 1]} />
+      <meshStandardMaterial color={props.color ?? "orange"} />
+    </mesh>
+  );
+}
+function Sphere(props: JSX.IntrinsicElements["mesh"] & { color?: string }) {
+  const mesh = useRef<THREE.Mesh>(null!);
+
+  return (
+    <mesh {...props} ref={mesh}>
+      <sphereGeometry args={[2, 32, 16]} />
+      <meshStandardMaterial color={props.color ?? "orange"} />
+    </mesh>
+  );
+}
+
+const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+function CanvasPreview(props: { transpiled: string }) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [root, setRoot] = useState<Root | null>(null);
+
+  useEffect(() => {
+    if (!rootRef.current) return;
+    const _root = createRoot(rootRef.current);
+    setRoot(_root);
+  }, []);
+
+  useEffect(() => {
+    if (!root) return;
+    // console.log(props.transpiled);
+
+    const render = new Function(
+      "React",
+      "root",
+      "Canvas",
+      "Cube",
+      "Sphere",
+      "floorPlane",
+      "OrbitControls",
+      "OrthographicCamera",
+      `const code = ${props.transpiled}; root.render(code)`
+    );
+    render(
+      React,
+      root,
+      Canvas,
+      Cube,
+      Sphere,
+      floorPlane,
+      OrbitControls,
+      OrthographicCamera
+    );
+  }, [props.transpiled, root]);
+
+  return (
+    // <Canvas>
+    //   <ambientLight intensity={1} />
+    //   <directionalLight
+    //     intensity={1}
+    //     castShadow
+    //     shadow-mapSize-height={512}
+    //     shadow-mapSize-width={512}
+    //   />
+
+    //   <planeHelper args={[floorPlane]} />
+    //   <gridHelper args={[200, 40]} />
+    //   {/* {props.transpiled} */}
+    //   <OrthographicCamera makeDefault zoom={50} position={[0, 40, 200]} />
+    //   <OrbitControls minZoom={10} maxZoom={50} />
+    // </Canvas>
+    <div className="w-full" ref={rootRef}></div>
+  );
+}
+class ErrorBoundary extends React.Component {
+  //@ts-ignore
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  //@ts-ignore
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true };
+  }
+  //@ts-ignore
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    // logErrorToMyService(error, errorInfo);
+    console.log(error);
+  }
+
+  render() {
+    //@ts-ignore
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return <h1>Something went wrong.</h1>;
+    }
+    //@ts-ignore
+    return this.props.children;
+  }
+}
+
 function App() {
   const { state, doc, store, provider, undoManager } = yjs.useStore();
   const transpiled = useEsbuild(state.sourceCode.toJSON(), { loader: "tsx" });
-  const [width, setWidth] = useState(400);
+  const [width, setWidth] = useState(700);
 
   const onChange = useCallback((value: string, viewUpdate: ViewUpdate) => {
     // console.log("value:", value);
@@ -107,6 +223,15 @@ function App() {
       });
     }
   }, [provider]);
+
+  useEffect(() => {
+    provider?.on("sync", () => {
+      if (provider?.synced && !state.sourceCode.toJSON()) {
+        // state.sourceCode.insert(0, "");
+      }
+    });
+  }, [state, provider]);
+
   if (!provider || !undoManager) {
     return null;
   }
@@ -118,9 +243,8 @@ function App() {
         style={{ width: width, maxWidth: width, minWidth: width }}
       >
         <CodeMirror
-          value=""
-          height="200px"
-          className="text-xs"
+          height="100%"
+          className="text-xs h-full"
           extensions={[
             javascript({ jsx: true, typescript: true }),
             yCollab(store.sourceCode as any, provider.awareness, {
@@ -129,13 +253,18 @@ function App() {
           ]}
           onChange={onChange}
         />
-        <div className="text-xs">
+        {/* <div className="text-xs">
           <div>output:</div>
           <pre>{transpiled.data?.code}</pre>
-        </div>
+        </div> */}
         {/* <Editor /> */}
       </div>
-      <Metaverse />
+      {/* <Metaverse /> */}
+      {transpiled.data?.code && (
+        <ErrorBoundary>
+          <CanvasPreview transpiled={transpiled.data?.code} />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }

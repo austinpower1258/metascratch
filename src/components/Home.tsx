@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as THREE from "three";
 
-function Box(props: JSX.IntrinsicElements["mesh"]) {
+function Cube(props: JSX.IntrinsicElements["mesh"] & { color?: string }) {
   const mesh = useRef<THREE.Mesh>(null!);
   const [hovered, setHover] = useState(false);
   const [active, setActive] = useState(false);
@@ -23,7 +23,7 @@ function Box(props: JSX.IntrinsicElements["mesh"]) {
       onPointerOut={(event) => setHover(false)}
     >
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? "hotpink" : "orange"} />
+      <meshStandardMaterial color={props.color ?? "orange"} />
     </mesh>
   );
 }
@@ -46,7 +46,7 @@ export default function Home() {
         <Canvas>
           <ambientLight />
           <pointLight position={[10, 10, 10]} />
-          <Box position={[0, 0, 0]} />
+          <Cube position={[0, 0, 0]} />
         </Canvas>
       </div>
     </div>

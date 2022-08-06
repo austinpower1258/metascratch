@@ -8,5 +8,8 @@ export default defineConfig({
     Unocss({
       /* options */
     }),
-  ]
-})
+  ],
+  server: {
+    host: "0.0.0.0",
+  },
+});
